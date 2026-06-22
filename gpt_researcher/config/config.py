@@ -42,10 +42,13 @@ class Config:
         self.embedding_kwargs: Dict[str, Any] = {}
 
         config_to_use = self.load_config(config_path)
+        #设置环境变量,并判断retrieve是否是在有效列表里的
         self._set_attributes(config_to_use)
         self._set_embedding_attributes()
         self._set_llm_attributes()
+        #兼容老版本
         self._handle_deprecated_attributes()
+        #获得路径,没有的话就新建一个
         if config_to_use['REPORT_SOURCE'] != 'web':
           self._set_doc_path(config_to_use)
 
@@ -59,6 +62,7 @@ class Config:
         if hasattr(self, 'mcp_allowed_root_paths'):
             self.mcp_allowed_root_paths = self.mcp_allowed_root_paths
 
+    #判断环境变量有没有,有的话就覆盖
     def _set_attributes(self, config: Dict[str, Any]) -> None:
         """Set configuration attributes from config dictionary.
 
@@ -82,19 +86,20 @@ class Config:
             print(f"Warning: {str(e)}. Defaulting to 'tavily' retriever.")
             self.retrievers = ["tavily"]
 
+    #获得embedding_provider和embedding_model这个是最新用法
     def _set_embedding_attributes(self) -> None:
         """Parse and set embedding provider and model attributes."""
         self.embedding_provider, self.embedding_model = self.parse_embedding(
             self.embedding
         )
-
+    #获得fast_llm和smart_llm这个是最新用法
     def _set_llm_attributes(self) -> None:
         """Parse and set LLM provider and model attributes for all LLM types."""
         self.fast_llm_provider, self.fast_llm_model = self.parse_llm(self.fast_llm)
         self.smart_llm_provider, self.smart_llm_model = self.parse_llm(self.smart_llm)
         self.strategic_llm_provider, self.strategic_llm_model = self.parse_llm(self.strategic_llm)
         self.reasoning_effort = self.parse_reasoning_effort(os.getenv("REASONING_EFFORT"))
-
+    #兼容之前的用法,但是警告.之前是分开的现在是合并的例如openai:text-embedding-3-large
     def _handle_deprecated_attributes(self) -> None:
         """Handle deprecated configuration attributes with warnings."""
         if os.getenv("EMBEDDING_PROVIDER") is not None:
@@ -144,6 +149,7 @@ class Config:
             warnings.warn(_deprecation_warning, FutureWarning, stacklevel=2)
             self.smart_llm_model = os.environ["SMART_LLM_MODEL"] or self.smart_llm_model
 
+    #去找一下这个文件夹,没有的话就创建
     def _set_doc_path(self, config: Dict[str, Any]) -> None:
         self.doc_path = config['DOC_PATH']
         if self.doc_path:
@@ -153,6 +159,7 @@ class Config:
                 print(f"Warning: Error validating doc_path: {str(e)}. Using default doc_path.")
                 self.doc_path = DEFAULT_CONFIG['DOC_PATH']
 
+    #去找配置文件,没有的话就使用默认的
     @classmethod
     def load_config(cls, config_path: str | None) -> Dict[str, Any]:
         """Load a configuration by name."""
@@ -161,6 +168,7 @@ class Config:
             return DEFAULT_CONFIG
 
         # config_path = os.path.join(cls.CONFIG_DIR, config_path)
+        #目录不存在
         if not os.path.exists(config_path):
             if config_path and config_path != "default":
                 print(f"Warning: Configuration not found at '{config_path}'. Using default configuration.")
@@ -185,6 +193,7 @@ class Config:
                 configs.append(file[:-5])  # Remove .json extension
         return configs
 
+    #返回有效的retriever
     def parse_retrievers(self, retriever_str: str) -> List[str]:
         """Parse the retriever string into a list of retrievers and validate them."""
         from ..retrievers.utils import get_all_retriever_names

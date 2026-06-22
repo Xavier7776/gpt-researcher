@@ -111,6 +111,7 @@ class ChiefEditorAgent:
         Returns:
             The result of the research task.
         """
+        #获得workflow
         research_team = self.init_research_team()
         chain = research_team.compile()
 

@@ -56,7 +56,8 @@ class MCPResearchSkill:
                 'model': self.cfg.strategic_llm_model,
                 **self.cfg.llm_kwargs
             }
-            
+
+            #获得LLM实例
             llm_provider = GenericLLMProvider.from_provider(
                 self.cfg.strategic_llm_provider, 
                 **provider_kwargs
@@ -99,6 +100,7 @@ class MCPResearchSkill:
                     
                     try:
                         # Find the tool by name
+                        #next用于从迭代器中获取第一个匹配的元素
                         tool = next((t for t in selected_tools if t.name == tool_name), None)
                         if not tool:
                             logger.warning(f"Tool {tool_name} not found in selected tools")
@@ -110,6 +112,7 @@ class MCPResearchSkill:
                         elif hasattr(tool, 'invoke'):
                             result = tool.invoke(tool_args)
                         else:
+                            #判断是不是异步决定加不加await
                             result = await tool(tool_args) if asyncio.iscoroutinefunction(tool) else tool(tool_args)
                         
                         # Log the actual tool response for debugging
@@ -135,6 +138,7 @@ class MCPResearchSkill:
                         continue
                         
             # Also include the LLM's own analysis/response as a result
+            # 加上大模型的分析结果
             if hasattr(response, 'content') and response.content:
                 llm_analysis = {
                     "title": f"LLM Analysis: {query}",
@@ -174,6 +178,23 @@ class MCPResearchSkill:
                 search_results = []
                 # Prefer structured_content when present
                 structured = result.get("structured_content")
+                #类似这样
+                # {
+                #     "structured_content": {
+                #         "results": [
+                #             {
+                #                 "title": "AI 2026年最新进展",
+                #                 "href": "https://example.com/ai-2026",
+                #                 "body": "这里是关于2026年AI发展的详细报告..."
+                #             },
+                #             {
+                #                 "title": "深度学习新框架",
+                #                 "url": "https://example.com/framework",
+                #                 "content": "新框架大幅提升了训练效率..."
+                #             }
+                #         ]
+                #     }
+                # }
                 if isinstance(structured, dict):
                     items = structured.get("results")
                     if isinstance(items, list):

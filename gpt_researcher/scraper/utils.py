@@ -73,12 +73,18 @@ def extract_title(soup: BeautifulSoup) -> str:
 def get_image_hash(image_url: str) -> str:
     """Calculate a simple hash based on the image filename and essential query parameters"""
     try:
+        # image_url = "https://cdn.example.com/news/photo.jpg?url=abc&size=large&t=123"
+        # parsed_url.scheme  # "https"
+        # parsed_url.netloc  # "cdn.example.com"
+        # parsed_url.path  # "/news/photo.jpg"
+        # parsed_url.query  # "url=abc&size=large&t=123"
         parsed_url = urlparse(image_url)
         
         # Extract the filename
         filename = parsed_url.path.split('/')[-1]
         
         # Extract essential query parameters (e.g., 'url' for CDN-served images)
+        # "url=abc&size=large&t=123" → {'url': ['abc'], 'size': ['large'], 't': ['123']}
         query_params = parse_qs(parsed_url.query)
         essential_params = query_params.get('url', [])
         
@@ -106,6 +112,7 @@ def clean_soup(soup: BeautifulSoup) -> BeautifulSoup:
             "svg",
         ]
     ):
+        #decompose() 是 BeautifulSoup 的方法，直接把这个标签连同它的所有子内容从树上删除。
         tag.decompose()
 
     disallowed_class_set = {"nav", "menu", "sidebar", "footer"}
@@ -129,5 +136,6 @@ def get_text_from_soup(soup: BeautifulSoup) -> str:
     """Get the relevant text from the soup with improved filtering"""
     text = soup.get_text(strip=True, separator="\n")
     # Remove excess whitespace
+    #\s 匹配任何空白字符，包括空格、Tab、换行符。{2,} 表示连续出现 2 次及以上。
     text = re.sub(r"\s{2,}", " ", text)
     return text

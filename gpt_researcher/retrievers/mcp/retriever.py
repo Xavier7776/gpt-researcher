@@ -11,6 +11,7 @@ import logging
 from typing import List, Dict, Any, Optional
 
 try:
+    #适应MCP到langchain的格式
     from langchain_mcp_adapters.client import MultiServerMCPClient
     HAS_MCP_ADAPTERS = True
 except ImportError:
@@ -165,7 +166,7 @@ class MCPRetriever:
             # Calculate total content length for summary
             total_content_length = sum(len(result.get("body", "")) for result in results)
             await self.streamer.stream_research_results(len(results), total_content_length)
-            
+            #展示
             # Log detailed content samples for debugging
             if results:
                 # Show samples of the first few results
@@ -232,6 +233,7 @@ class MCPRetriever:
                 import threading
                 
                 # Create a new event loop in a separate thread
+                # 获得新线程
                 def run_in_thread():
                     new_loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(new_loop)

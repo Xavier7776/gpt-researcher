@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import sys
 import os
 import uuid
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from multi_agents.agents import ChiefEditorAgent
@@ -20,11 +21,12 @@ def open_task():
     # Construct the absolute path to task.json
     task_json_path = os.path.join(current_dir, 'task.json')
     
-    with open(task_json_path, 'r') as f:
+    with open(task_json_path, 'r', encoding='utf-8') as f:
         task = json.load(f)
 
     if not task:
-        raise Exception("No task found. Please ensure a valid task.json file is present in the multi_agents directory and contains the necessary task information.")
+        raise Exception("No task found. Please ensure a valid task.json "
+                        "file is present in the multi_agents directory and contains the necessary task information.")
 
     # Override model with STRATEGIC_LLM if defined in environment
     strategic_llm = os.environ.get("STRATEGIC_LLM")
@@ -37,9 +39,20 @@ def open_task():
 
     return task
 
-async def run_research_task(query, websocket=None, stream_output=None, tone=Tone.Objective, headers=None):
-    task = open_task()
-    task["query"] = query
+async def run_research_task(query, websocket=None, stream_output=None, tone=Tone.Objective, headers=None, task_config=None):
+    """Run a multi-agent research task.
+    
+    Args:
+        query: Research query string
+        task_config: Optional full task config dict. If provided, used instead of task.json.
+                     If not provided, falls back to reading task.json from disk.
+    """
+    if task_config:
+        task = task_config
+        task["query"] = query
+    else:
+        task = open_task()
+        task["query"] = query
 
     chief_editor = ChiefEditorAgent(task, websocket, stream_output, tone, headers)
     research_report = await chief_editor.run_research_task()

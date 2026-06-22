@@ -165,6 +165,7 @@ class MCPClientManager:
             
         try:
             # Get tools from all servers
+            #连接对应的mcp服务获得所有的工具
             all_tools = await client.get_tools()
             
             if all_tools:

@@ -52,3 +52,16 @@ server_log.txt
 .cursorrules
 CURSOR_RULES.md
 /.history
+
+# Local project data
+.workbuddy/
+
+# Stray artifacts
+gpt_researcher.zip
+nul
+
+# Local doc translations
+docs/docs/gpt-researcher/getting-started/introduction_zh.md
+docs/docs/gpt-researcher/gptr/config_zh.md
+docs/docs/gpt-researcher/gptr/deep_research_zh.md
+multi_agents/README_zh.md

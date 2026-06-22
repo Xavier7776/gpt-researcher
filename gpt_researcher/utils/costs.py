@@ -56,7 +56,7 @@ def estimate_llm_cost(input_content: str, output_content: str) -> float:
     output_costs = len(output_tokens) * OUTPUT_COST_PER_TOKEN
     return input_costs + output_costs
 
-
+#这个函数是一个类型归一化（normalization）工具，把各种可能传进来的"类似字典"的对象统一转换成标准的 Python dict，方便后面统一用 .get() 操作。
 def _mapping_to_dict(value: Mapping[str, Any] | Any | None) -> dict[str, Any]:
     if value is None:
         return {}

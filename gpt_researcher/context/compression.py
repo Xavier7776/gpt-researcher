@@ -118,7 +118,7 @@ class ContextCompressor:
         self.embeddings = embeddings
         self.similarity_threshold = os.environ.get("SIMILARITY_THRESHOLD", 0.35)
         self.prompt_family = prompt_family
-
+    #构建压缩检索管线
     def __get_contextual_retriever(self):
         """Build the contextual compression retriever pipeline.
 
@@ -161,6 +161,7 @@ class ContextCompressor:
         # If total content is small, skip expensive compression and return directly
         if total_chars < chunk_threshold and len(self.documents) <= max_results:
             # Fast path: no compression needed
+            #不用压缩,封装成langchain的document对象
             direct_docs = [
                 Document(
                     page_content=doc.get('raw_content', ''),
@@ -168,12 +169,15 @@ class ContextCompressor:
                 )
                 for doc in self.documents[:max_results]
             ]
+            #封装格式
             return self.prompt_family.pretty_print_docs(direct_docs, max_results)
 
         # Standard path: use compression for large content
+        #构建压缩检索管线
         compressed_docs = self.__get_contextual_retriever()
         if cost_callback:
             cost_callback(estimate_embedding_cost(model=OPENAI_EMBEDDING_MODEL, docs=self.documents))
+        #invoke后先从self.document获得所有文档再调用pipeline操作,最后返回结果
         relevant_docs = await asyncio.to_thread(compressed_docs.invoke, query, **self.kwargs)
         return self.prompt_family.pretty_print_docs(relevant_docs, max_results)
 

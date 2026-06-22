@@ -1,19 +1,17 @@
 {
-  "query": "Is AI in a hype cycle?",
+  "query": "全面透彻的分析一下小米公司",
   "max_sections": 3,
   "max_plan_revisions": 3,
   "publish_formats": {
     "markdown": true,
-    "pdf": true,
-    "docx": true
+    "pdf": false,
+    "docx": false
   },
   "include_human_feedback": false,
-  "follow_guidelines": false,
-  "model": "gpt-4o",
+  "follow_guidelines": true,
+  "model": "mimo-v2.5-pro",
   "guidelines": [
-    "The report MUST be written in APA format",
-    "Each sub section MUST include supporting sources using hyperlinks. If none exist, erase the sub section or rewrite it to be a part of the previous section",
-    "The report MUST be written in spanish"
+    "The report MUST be written in Chinese"
   ],
   "verbose": true
 }

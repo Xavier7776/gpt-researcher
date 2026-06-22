@@ -65,6 +65,7 @@ Guidelines: {guidelines}\nDraft: {draft_state.get("draft")}\n
         guidelines = task.get("guidelines")
         to_follow_guidelines = task.get("follow_guidelines")
         review = None
+        #判断是否需要审查
         if to_follow_guidelines:
             print_agent_output(f"Reviewing draft...", agent="REVIEWER")
 

@@ -29,8 +29,15 @@ class DocumentLoader:
                     tasks.append(self._load_document(file_path, file_extension))
                     
         elif isinstance(self.path, (str, bytes, os.PathLike)):
+            # os.walk
+            # 递归遍历目录树，每次迭代返回三个值：
+            # root：当前正在遍历的目录路径
+            # dirs：该目录下的子目录列表（os.walk
+            # 会继续递归进去）
+            # files：该目录下的文件名列表
             for root, dirs, files in os.walk(self.path):
                 for file in files:
+                    #file只有文件名没有路径,进行拼接
                     file_path = os.path.join(root, file)
                     file_name, file_extension_with_dot = os.path.splitext(file)
                     file_extension = file_extension_with_dot.strip(".").lower()

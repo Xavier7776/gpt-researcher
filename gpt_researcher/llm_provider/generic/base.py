@@ -71,6 +71,7 @@ class ReasoningEfforts(Enum):
     Low = "low"
 
 
+#写日志
 class ChatLogger:
     """Helper utility to log all chat requests and their corresponding responses
     plus the stack trace leading to the call.
@@ -101,7 +102,7 @@ class GenericLLMProvider:
     def _reset_last_response_metadata(self) -> None:
         self.last_usage_metadata = None
         self.last_response_metadata = {}
-
+    #根据message写入metadata
     def _capture_response_metadata(self, message: Any) -> None:
         usage_metadata = getattr(message, "usage_metadata", None)
         if usage_metadata:
@@ -121,6 +122,7 @@ class GenericLLMProvider:
     @classmethod
     def from_provider(cls, provider: str, chat_log: str | None = None, verbose: bool=True, **kwargs: Any):
         if provider == "openai":
+            #检查有没有安装好包
             _check_pkg("langchain_openai")
             from langchain_openai import ChatOpenAI
 
@@ -307,12 +309,14 @@ class GenericLLMProvider:
             )
         return cls(llm, chat_log, verbose=verbose)
 
-
+    #真正调用大模型的地方
     async def get_chat_response(self, messages, stream, websocket=None, **kwargs):
+        #重置元数据
         self._reset_last_response_metadata()
         if not stream:
             # Getting output from the model chain using ainvoke for asynchronous invoking
             output = await self.llm.ainvoke(messages, **kwargs)
+            #获得输出的元数据
             self._capture_response_metadata(output)
 
             res = output.content
@@ -324,7 +328,7 @@ class GenericLLMProvider:
             await self.chat_logger.log_request(messages, res)
 
         return res
-
+    #流失调用
     async def stream_response(self, messages, websocket=None, **kwargs):
         self._reset_last_response_metadata()
         paragraph = ""

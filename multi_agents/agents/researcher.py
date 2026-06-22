@@ -16,8 +16,10 @@ class ResearchAgent:
         researcher = GPTResearcher(query=query, report_type=research_report, parent_query=parent_query,
                                    verbose=verbose, report_source=source, tone=tone, websocket=self.websocket, headers=self.headers)
         # Conduct research on the given query
+        # 获取上下文
         await researcher.conduct_research()
         # Write the report
+        # 根据上下文给LLM生成报告
         report = await researcher.write_report()
 
         return report

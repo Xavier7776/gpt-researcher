@@ -69,6 +69,7 @@ async def generate_sub_queries(
     )
 
     try:
+        #调用大模型
         response = await create_chat_completion(
             model=cfg.strategic_llm_model,
             messages=[{"role": "user", "content": gen_queries_prompt}],

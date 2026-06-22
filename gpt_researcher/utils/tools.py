@@ -40,9 +40,10 @@ def _track_response_cost(
         usage_metadata=getattr(response_message, "usage_metadata", None),
         request_options=request_options,
     )
+    #这是一个回调函数,可以自定义函数调用这个数据
     cost_callback(llm_costs)
 
-
+#调用工具的回复
 async def create_chat_completion_with_tools(
     messages: List[Dict[str, str]],
     tools: List[Callable],
@@ -87,7 +88,7 @@ async def create_chat_completion_with_tools(
             'model': model,
             **(llm_kwargs or {})
         }
-        
+        #就是获得llm实例
         llm_provider_instance = GenericLLMProvider.from_provider(
             llm_provider, 
             **provider_kwargs
@@ -113,7 +114,9 @@ async def create_chat_completion_with_tools(
         from langchain_core.messages import ToolMessage
         
         # First call to LLM
+        #返回工具或者值
         response = await llm_with_tools.ainvoke(lc_messages)
+        #追踪费用
         _track_response_cost(
             llm_provider=llm_provider,
             model=model,
@@ -211,7 +214,7 @@ async def create_chat_completion_with_tools(
             exc_info=True
         )
         logger.info("Falling back to simple chat completion without tools")
-        
+        #简单调用,不适用工具
         # Fallback to simple chat completion without tools
         response = await create_chat_completion(
             model=model,
@@ -237,6 +240,7 @@ def create_search_tool(search_function: Callable[[str], Dict]) -> Callable:
     Returns:
         LangChain tool function decorated with @tool
     """
+    #包装成LangChain tool 对象
     @tool
     def search_tool(query: str) -> str:
         """Search for current events or online information when you need new knowledge that doesn't exist in the current context"""

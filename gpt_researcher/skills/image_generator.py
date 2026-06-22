@@ -107,6 +107,7 @@ class ImageGenerator:
             )
         
         # Step 1: Use LLM to identify best visualization opportunities
+        #得到[{title: "...", prompt: "...", section_hint: "..."}, ...]
         image_concepts = await self._plan_image_concepts(context, query)
         
         if not image_concepts:
@@ -247,8 +248,8 @@ Return 2-3 visualization concepts as a JSON array:"""
             response = response.strip()
             # Remove markdown code blocks if present
             if response.startswith("```"):
-                response = re.sub(r'^```(?:json)?\n?', '', response)
-                response = re.sub(r'\n?```$', '', response)
+                    response = re.sub(r'^```(?:json)?\n?', '', response)
+                    response = re.sub(r'\n?```$', '', response)
             
             concepts = json.loads(response)
             

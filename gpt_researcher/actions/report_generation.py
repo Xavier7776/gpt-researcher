@@ -8,7 +8,7 @@ from ..utils.enum import Tone
 
 logger = get_formatted_logger()
 
-
+#调用大模型写引言
 async def write_report_introduction(
     query: str,
     context: str,
@@ -39,6 +39,7 @@ async def write_report_introduction(
             model=config.smart_llm_model,
             messages=[
                 {"role": "system", "content": f"{agent_role_prompt}"},
+                #写引言
                 {"role": "user", "content": prompt_family.generate_report_introduction(
                     question=query,
                     research_summary=context,
@@ -111,7 +112,7 @@ async def write_conclusion(
         logger.error(f"Error in writing conclusion: {e}")
     return ""
 
-
+#给一个url和内容写一个总结
 async def summarize_url(
     url: str,
     content: str,
@@ -247,6 +248,7 @@ async def generate_report(
 
     """
     available_images = available_images or []
+    #返回类型
     generate_prompt = get_prompt_by_report_type(report_type, prompt_family)
     report = ""
 
@@ -287,10 +289,12 @@ Place each image on its own line after the relevant section header or paragraph.
             cost_callback=cost_callback,
             **kwargs
         )
+    #降级处理
     except Exception:
         try:
             report = await create_chat_completion(
                 model=cfg.smart_llm_model,
+                #有的可能不支持system所以删除
                 messages=[
                     {"role": "user", "content": f"{agent_role_prompt}\n\n{content}"},
                 ],

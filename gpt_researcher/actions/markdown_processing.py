@@ -2,6 +2,32 @@ import re
 import markdown
 from typing import List, Dict
 
+# [
+#     {
+#         "level": 1,
+#         "text": "编程语言",
+#         "children": [
+#             {
+#                 "level": 2,
+#                 "text": "Python",
+#                 "children": [
+#                     {
+#                         "level": 3,
+#                         "text": "基础语法"
+#                     }
+#                 ]
+#             },
+#             {
+#                 "level": 2,
+#                 "text": "Go"
+#             }
+#         ]
+#     },
+#     {
+#         "level": 1,
+#         "text": "数据库"
+#     }
+# ]
 def extract_headers(markdown_text: str) -> List[Dict]:
     """
     Extract headers from markdown text.
@@ -13,6 +39,7 @@ def extract_headers(markdown_text: str) -> List[Dict]:
         List[Dict]: A list of dictionaries representing the header structure.
     """
     headers = []
+    # 把markdown转为HTML
     parsed_md = markdown.markdown(markdown_text)
     lines = parsed_md.split("\n")
 
@@ -38,6 +65,7 @@ def extract_headers(markdown_text: str) -> List[Dict]:
 
     return headers
 
+#可以用更好的方法,使用beautifulSoup
 def extract_sections(markdown_text: str) -> List[Dict[str, str]]:
     """
     Extract all written sections from subtopic report.
@@ -64,7 +92,7 @@ def extract_sections(markdown_text: str) -> List[Dict[str, str]]:
             })
     
     return sections
-
+#生成目录
 def table_of_contents(markdown_text: str) -> str:
     """
     Generate a table of contents for the given markdown text.
@@ -75,6 +103,32 @@ def table_of_contents(markdown_text: str) -> str:
     Returns:
         str: The generated table of contents.
     """
+    # [
+    #     {
+    #         "level": 1,
+    #         "text": "编程语言",
+    #         "children": [
+    #             {
+    #                 "level": 2,
+    #                 "text": "Python",
+    #                 "children": [
+    #                     {
+    #                         "level": 3,
+    #                         "text": "基础语法"
+    #                     }
+    #                 ]
+    #             },
+    #             {
+    #                 "level": 2,
+    #                 "text": "Go"
+    #             }
+    #         ]
+    #     },
+    #     {
+    #         "level": 1,
+    #         "text": "数据库"
+    #     }
+    # ]
     def generate_table_of_contents(headers, indent_level=0):
         toc = ""
         for header in headers:

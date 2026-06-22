@@ -45,6 +45,7 @@ class ResearchConductor:
         # Track MCP query count for balanced mode
         self._mcp_query_count = 0
 
+    #通过之前的搜索结果生成子查询,再通过子查询生成大纲,主要是给出大纲
     async def plan_research(self, query, query_domains=None):
         """Gets the sub-queries from the query
         Args:
@@ -59,6 +60,7 @@ class ResearchConductor:
             self.researcher.websocket,
         )
 
+        #粗略查询
         search_results = await get_search_results(query, self.researcher.retrievers[0], query_domains, researcher=self.researcher)
         self.logger.info(f"Initial search results obtained: {len(search_results)} results")
 
@@ -134,6 +136,8 @@ class ResearchConductor:
         # Conduct research based on the source type
         if self.researcher.source_urls:
             self.logger.info("Using provided source URLs")
+            #获得和query最相关的content
+            #只查用户提供的url
             research_data = await self._get_context_by_urls(self.researcher.source_urls)
             if research_data and len(research_data) == 0 and self.researcher.verbose:
                 await stream_output(
@@ -144,11 +148,14 @@ class ResearchConductor:
                 )
             if self.researcher.complement_source_urls:
                 self.logger.info("Complementing with web search")
+                #去搜索引擎找
                 additional_research = await self._get_context_by_web_search(self.researcher.query, [], self.researcher.query_domains)
                 research_data += ' '.join(additional_research)
+        #从网络找
         elif self.researcher.report_source == ReportSource.Web.value:
             self.logger.info("Using web search with all configured retrievers")
             research_data = await self._get_context_by_web_search(self.researcher.query, [], self.researcher.query_domains)
+        #从本地加载
         elif self.researcher.report_source == ReportSource.Local.value:
             self.logger.info("Using local search")
             document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
@@ -165,9 +172,11 @@ class ResearchConductor:
                 document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
             if self.researcher.vector_store:
                 self.researcher.vector_store.load(document_data)
+            #本地+网络.docs有可能是网络下载也有可能是本地.web_context一定是网络搜索
             docs_context = await self._get_context_by_web_search(self.researcher.query, document_data, self.researcher.query_domains)
             web_context = await self._get_context_by_web_search(self.researcher.query, [], self.researcher.query_domains)
             research_data = self.researcher.prompt_family.join_local_web_documents(docs_context, web_context)
+
         elif self.researcher.report_source == ReportSource.Azure.value:
             from ..document.azure_document_loader import AzureDocumentLoader
             azure_loader = AzureDocumentLoader(
@@ -276,10 +285,12 @@ class ResearchConductor:
         if query_domains is None:
             query_domains = []
 
+        #有很多的检索服务,但单独把MCP服务单独提出来
         # **CONFIGURABLE MCP OPTIMIZATION: Control MCP strategy**
         mcp_retrievers = [r for r in self.researcher.retrievers if "mcpretriever" in r.__name__.lower()]
         
         # Get MCP strategy configuration
+        #没有配置就返回fast
         mcp_strategy = self._get_mcp_strategy()
         
         if mcp_retrievers and self._mcp_results_cache is None:
@@ -390,6 +401,7 @@ class ResearchConductor:
         # Default to fast mode
         return "fast"
 
+    #先遍历查询再遍历mcp,总的生成是mcp*query
     async def _execute_mcp_research_for_queries(self, queries: list, mcp_retrievers: list) -> list:
         """
         Execute MCP research for a list of queries.
@@ -472,6 +484,7 @@ class ResearchConductor:
             web_context = ""
             
             # Get MCP strategy configuration
+            #fast,deep,disable
             mcp_strategy = self._get_mcp_strategy()
             
             # **CONFIGURABLE MCP PROCESSING**
@@ -505,6 +518,7 @@ class ResearchConductor:
                     
                     mcp_context = await self._execute_mcp_research_for_queries([sub_query], mcp_retrievers)
                 else:
+                    #采用deep模式
                     # Fallback: if no cache and not deep mode, run MCP for this query
                     self.logger.warning("MCP cache not available, falling back to per-sub-query execution")
                     if self.researcher.verbose:
@@ -528,6 +542,7 @@ class ResearchConductor:
                 self.logger.info(f"Web content found for sub-query: {len(str(web_context)) if web_context else 0} chars")
 
             # Combine MCP context with web context intelligently
+            #就是简单的一个拼接,把web和mcp的结果拼起来
             combined_context = self._combine_mcp_and_web_context(mcp_context, web_context, sub_query)
             
             # Log context combination results
@@ -681,6 +696,7 @@ class ResearchConductor:
                 
                 if content and content.strip():
                     # Create a well-formatted context entry
+                    #判断是真实URL还是内部虚拟URL地址
                     if url and url != f"mcp://llm_analysis":
                         citation = f"\n\n*Source: {title} ({url})*"
                     else:
@@ -724,7 +740,7 @@ class ResearchConductor:
         context = await self.researcher.context_manager.get_similar_content_by_query_with_vectorstore(sub_query, filter)
 
         return context
-
+    #找没访问过的
     async def _get_new_urls(self, url_set_input):
         """Gets the new urls from the given url set.
         Args: url_set_input (set[str]): The url set to get the new urls from
@@ -922,7 +938,8 @@ class ResearchConductor:
                     self.researcher.websocket,
                 )
             return []
-            
+    #被取代了    - _search_relevant_source_urls() — 负责搜索 + 分类 URL
+    #           - _scrape_data_by_urls() — 负责爬取 URL 内容
     async def _extract_content(self, results):
         """
         Extract content from search results using the browser manager.

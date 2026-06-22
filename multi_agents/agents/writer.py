@@ -29,6 +29,7 @@ class WriterAgent:
             "references": "References",
         }
 
+    #写引言和结论
     async def write_sections(self, research_state: dict):
         query = research_state.get("title")
         data = research_state.get("research_data")
@@ -104,7 +105,17 @@ Headers Data: {headers}\n
                 f"Writing final research report based on research data...",
                 agent="WRITER",
             )
-
+        #写结论和引言
+        # {
+        #     "table_of_contents": "## 一、市场规模\n## 二、技术突破\n## 三、中国AI企业...",
+        #     "introduction": "2024年人工智能产业...（正文内容）",
+        #     "conclusion": "综上所述...（正文内容）",
+        #     "sources": [
+        #         "- Smith, 2024, AI Industry Report [https://...](https://...)",
+        #         "- 工信部, 2024, 人工智能发展白皮书 [...]",
+        #         ...
+        #     ]
+        # }
         research_layout_content = await self.write_sections(research_state)
 
         if research_state.get("task").get("verbose"):

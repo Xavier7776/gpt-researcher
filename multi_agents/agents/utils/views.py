@@ -11,6 +11,5 @@ class AgentColor(Enum):
     REVISOR = Fore.LIGHTWHITE_EX
     MASTER = Fore.LIGHTYELLOW_EX
 
-
 def print_agent_output(output:str, agent: str="RESEARCHER"):
     print(f"{AgentColor[agent].value}{agent}: {output}{Style.RESET_ALL}")

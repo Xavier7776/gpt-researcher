@@ -208,7 +208,7 @@ STYLE REQUIREMENTS:
 - High contrast for readability
 - If showing data or comparisons, use clear labels and legends
 - Suitable for both digital viewing and printing"""
-
+    #拆成子问题的提示词
     @staticmethod
     def generate_search_queries_prompt(
         question: str,
@@ -564,7 +564,7 @@ Instructions:
     ################################################################################################
 
     # DETAILED REPORT PROMPTS
-
+    # 生成子主题
     @staticmethod
     def generate_subtopics_prompt() -> str:
         return """
@@ -859,6 +859,7 @@ def get_prompt_by_report_type(
     report_type: str,
     prompt_family: type[PromptFamily] | PromptFamily,
 ):
+    #从哪个对象获取哪个
     prompt_by_type = getattr(prompt_family, report_type_mapping.get(report_type, ""), None)
     default_report_type = ReportType.ResearchReport.value
     if not prompt_by_type:

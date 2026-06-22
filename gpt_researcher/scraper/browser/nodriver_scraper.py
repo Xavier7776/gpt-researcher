@@ -187,74 +187,74 @@ class NoDriverScraper:
         self.session = session
         self.debug = False
 
-    async def scrape_async(self) -> Tuple[str, list[dict], str]:
-        """Returns tuple of (text, image_urls, title)"""
-        if not self.url:
-            return (
-                "A URL was not specified, cancelling request to browse website.",
-                [],
-                "",
-            )
-
-        browser: NoDriverScraper.Browser | None = None
-        page = None
-        try:
-            try:
-                browser = await self.get_browser()
-            except ImportError as e:
-                self.logger.error(f"Failed to initialize browser: {str(e)}")
-                return str(e), [], ""
-
-            page = await browser.get(self.url)
-            if page is None:
-                # browser.get() increments processing_count before returning;
-                # a None result means the connection timed out. Decrement to
-                # avoid leaking the slot and deadlocking the browser pool.
-                browser.processing_count -= 1
-                return "Browser failed to open page (returned None)", [], ""
-            await browser.wait_or_timeout(page, "complete", 2)
-            # wait for potential redirection
-            await page.sleep(random.uniform(0.3, 0.7))
-            await browser.wait_or_timeout(page, "idle", 2)
-
-            await browser.scroll_page_to_bottom(page)
-            html = await page.get_content()
-            soup = BeautifulSoup(html, "lxml")
-            clean_soup(soup)
-            text = get_text_from_soup(soup)
-            image_urls = get_relevant_images(soup, self.url)
-            title = extract_title(soup)
-
-            if len(text) < 200:
-                self.logger.warning(
-                    f"Content is too short from {self.url}. Title: {title}, Text length: {len(text)},\n"
-                    f"excerpt: {text}."
+        async def scrape_async(self) -> Tuple[str, list[dict], str]:
+            """Returns tuple of (text, image_urls, title)"""
+            if not self.url:
+                return (
+                    "A URL was not specified, cancelling request to browse website.",
+                    [],
+                    "",
                 )
-                if self.debug:
-                    screenshot_dir = Path("logs/screenshots")
-                    screenshot_dir.mkdir(exist_ok=True)
-                    screenshot_path = (
-                        screenshot_dir
-                        / f"screenshot-error-{NoDriverScraper.get_domain(self.url)}.jpeg"
-                    )
-                    await page.save_screenshot(screenshot_path)
-                    self.logger.warning(
-                        f"check screenshot at [{screenshot_path}] for more details."
-                    )
 
-            return text, image_urls, title
-        except Exception as e:
-            self.logger.error(
-                f"An error occurred during scraping: {str(e)}\n"
-                "Full stack trace:\n"
-                f"{traceback.format_exc()}"
-            )
-            return str(e), [], ""
-        finally:
+            browser: NoDriverScraper.Browser | None = None
+            page = None
             try:
-                if page and browser:
-                    await browser.close_page(page)
-                if browser:
-                    await self.release_browser(browser)
+                try:
+                    browser = await self.get_browser()
+                except ImportError as e:
+                    self.logger.error(f"Failed to initialize browser: {str(e)}")
+                    return str(e), [], ""
+
+                page = await browser.get(self.url)
+                if page is None:
+                    # browser.get() increments processing_count before returning;
+                    # a None result means the connection timed out. Decrement to
+                    # avoid leaking the slot and deadlocking the browser pool.
+                    browser.processing_count -= 1
+                    return "Browser failed to open page (returned None)", [], ""
+                await browser.wait_or_timeout(page, "complete", 2)
+                # wait for potential redirection
+                await page.sleep(random.uniform(0.3, 0.7))
+                await browser.wait_or_timeout(page, "idle", 2)
+
+                await browser.scroll_page_to_bottom(page)
+                html = await page.get_content()
+                soup = BeautifulSoup(html, "lxml")
+                clean_soup(soup)
+                text = get_text_from_soup(soup)
+                image_urls = get_relevant_images(soup, self.url)
+                title = extract_title(soup)
+
+                if len(text) < 200:
+                    self.logger.warning(
+                        f"Content is too short from {self.url}. Title: {title}, Text length: {len(text)},\n"
+                        f"excerpt: {text}."
+                    )
+                    if self.debug:
+                        screenshot_dir = Path("logs/screenshots")
+                        screenshot_dir.mkdir(exist_ok=True)
+                        screenshot_path = (
+                            screenshot_dir
+                            / f"screenshot-error-{NoDriverScraper.get_domain(self.url)}.jpeg"
+                        )
+                        await page.save_screenshot(screenshot_path)
+                        self.logger.warning(
+                            f"check screenshot at [{screenshot_path}] for more details."
+                        )
+
+                return text, image_urls, title
             except Exception as e:
-                self.logger.error(e)
+                self.logger.error(
+                    f"An error occurred during scraping: {str(e)}\n"
+                    "Full stack trace:\n"
+                    f"{traceback.format_exc()}"
+                )
+                return str(e), [], ""
+            finally:
+                try:
+                    if page and browser:
+                        await browser.close_page(page)
+                    if browser:
+                        await self.release_browser(browser)
+                except Exception as e:
+                    self.logger.error(e)

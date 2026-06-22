@@ -45,6 +45,7 @@ class OnlineDocumentLoader:
                         return []
 
                     content = await response.read()
+                    #python内置的库,创建临时文件，返回文件名
                     with tempfile.NamedTemporaryFile(delete=False, suffix=self._get_extension(url)) as tmp_file:
                         tmp_file.write(content)
                         tmp_file_path = tmp_file.name

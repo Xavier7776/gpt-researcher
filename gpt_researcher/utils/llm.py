@@ -23,7 +23,7 @@ from ..prompts import PromptFamily
 from .costs import calculate_llm_cost
 from .validators import Subtopics
 
-
+#获得LLM
 def get_llm(llm_provider: str, **kwargs):
     """Get an LLM provider instance.
 
@@ -106,6 +106,7 @@ async def create_chat_completion(
     # create response
     max_attempts = 1 if (stream and websocket is not None) else 10
     last_exception: Exception | None = None
+    #不停重试
     for attempt in range(1, max_attempts + 1):
         try:
             response = await provider.get_chat_response(
@@ -173,7 +174,7 @@ async def construct_subtopics(
     """
     try:
         parser = PydanticOutputParser(pydantic_object=Subtopics)
-
+        #生成子主题
         prompt = PromptTemplate(
             template=prompt_family.generate_subtopics_prompt(),
             input_variables=["task", "data", "subtopics", "max_subtopics"],
@@ -183,6 +184,7 @@ async def construct_subtopics(
 
         provider_kwargs = {'model': config.smart_llm_model}
 
+        #把config里的llm_kwargs更新到provider_kwargs里
         if config.llm_kwargs:
             provider_kwargs.update(config.llm_kwargs)
 

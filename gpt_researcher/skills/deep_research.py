@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Maximum words allowed in context (25k words for safety margin)
 MAX_CONTEXT_WORDS = 25000
-
+#三个模式的设计意图：LLM 输出格式不稳定，可能带代码块包装、可能是裸数组、可能是裸对象，三重兜底保证能解析到 JSON。
+#compile表现先编译,不用每次都重新编译
 JSON_BLOCK_PATTERNS = [
     re.compile(
         r"```(?:json)?\s*(?P<payload>[\s\S]*?)```",
@@ -25,23 +26,29 @@ JSON_BLOCK_PATTERNS = [
     re.compile(r"(?P<payload>\[[\s\S]*\])"),
     re.compile(r"(?P<payload>\{[\s\S]*\})"),
 ]
-
+#Query: 什么是深度学习？
+#- query:How to install cuda
 QUERY_LINE_PATTERN = re.compile(
     r"^(?:[-*]|\d+[.)])?\s*Query:\s*(?P<query>.+)$",
     re.IGNORECASE,
 )
+
 GOAL_LINE_PATTERN = re.compile(
     r"^(?:[-*]|\d+[.)])?\s*(?:Goal|Research Goal):\s*(?P<goal>.+)$",
     re.IGNORECASE,
 )
+
+#必须以?结尾
 QUESTION_LINE_PATTERN = re.compile(
     r"^(?:[-*]|\d+[.)])?\s*(?:Question:\s*)?(?P<question>.+\?)$",
     re.IGNORECASE,
 )
+
 LEARNING_LINE_PATTERN = re.compile(
     r"^(?:[-*]|\d+[.)])?\s*Learning(?:\s*\[(?P<citation>[^\]]+)\])?:\s*(?P<learning>.+)$",
     re.IGNORECASE,
 )
+
 URL_PATTERN = re.compile(r"https?://[^\s\]\)>\",;]+")
 
 
@@ -58,12 +65,13 @@ def _extract_json_payloads(response: str) -> list[str]:
 
     return candidates
 
-
+#从 LLM 返回的文本中尽力解析出一个合法的 JSON 对象
 def _load_repaired_json(response: str) -> Any:
     for candidate in [response.strip(), *_extract_json_payloads(response)]:
         if not candidate:
             continue
         try:
+            #修复一些json格式错误
             return json_repair.loads(candidate)
         except Exception as exc:
             logger.debug(
@@ -73,11 +81,12 @@ def _load_repaired_json(response: str) -> Any:
             continue
     return None
 
-
+#从 LLM 的原始响应中解析出搜索查询列表
 def parse_search_queries_response(response: str, num_queries: int) -> List[Dict[str, str]]:
     parsed = _load_repaired_json(response)
     candidate_queries = parsed
     if isinstance(parsed, dict):
+        #这个是queries
         candidate_queries = parsed.get("queries") or parsed.get("searchQueries") or parsed.get("items")
 
     if isinstance(candidate_queries, list):
@@ -91,7 +100,7 @@ def parse_search_queries_response(response: str, num_queries: int) -> List[Dict[
         ]
         if queries:
             return queries[:num_queries]
-
+    #json匹配失败使用文本匹配
     queries: List[Dict[str, str]] = []
     current_query: Dict[str, str] = {}
 
@@ -236,7 +245,7 @@ class ResearchProgress:
         self.total_queries = 0
         self.completed_queries = 0
 
-
+#********
 class DeepResearchSkill:
     def __init__(self, researcher):
         self.researcher = researcher
@@ -244,6 +253,7 @@ class DeepResearchSkill:
         self.depth = getattr(researcher.cfg, 'deep_research_depth', 2)
         self.concurrency_limit = getattr(researcher.cfg, 'deep_research_concurrency', 2)
         self.websocket = researcher.websocket
+        #语气
         self.tone = researcher.tone
         self.config_path = researcher.cfg.config_path if hasattr(researcher.cfg, 'config_path') else None
         self.headers = researcher.headers or {}
@@ -395,6 +405,7 @@ Return ONLY a JSON object using this exact schema:
 
         # Generate search queries
         print(f"🔎 Generating {breadth} search queries...", flush=True)
+        #产生研究的查询
         serp_queries = await self.generate_search_queries(query, num_queries=breadth)
         print(f"✅ Generated {len(serp_queries)} queries: {[q['query'] for q in serp_queries]}", flush=True)
         progress.total_queries = len(serp_queries)
@@ -406,6 +417,7 @@ Return ONLY a JSON object using this exact schema:
         all_sources = []
 
         # Process queries with concurrency limit
+        # 维护一个计数器
         semaphore = asyncio.Semaphore(self.concurrency_limit)
 
         async def process_query(serp_query: Dict[str, str]) -> Optional[Dict[str, Any]]:

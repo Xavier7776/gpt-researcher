@@ -170,6 +170,7 @@ class GPTResearcher:
         # Process MCP configurations if provided
         self.mcp_configs = mcp_configs
         if mcp_configs:
+            #把mcp加入retrieve
             self._process_mcp_configs(mcp_configs)
         
         self.retrievers = get_retrievers(self.headers, self.cfg)
@@ -263,7 +264,8 @@ class GPTResearcher:
             else:
                 # Treat any other number as fast mode
                 return "fast"
-        
+
+        #兜底,优先使用传过来的参数
         # Priority 3: Use config setting
         if hasattr(self.cfg, 'mcp_strategy'):
             config_strategy = self.cfg.mcp_strategy
@@ -292,6 +294,7 @@ class GPTResearcher:
             mcp_configs (list[dict]): List of MCP server configuration dictionaries.
         """
         # Add MCP to retrievers via cfg (not os.environ) to avoid env pollution.
+        #判断是否有有retrievers属性
         if hasattr(self.cfg, 'retrievers') and self.cfg.retrievers:
             current_retrievers = (
                 list(self.cfg.retrievers)

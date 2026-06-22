@@ -45,6 +45,7 @@ class Scraper:
         self.urls = unique_urls
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": user_agent})
+        #self.scraper 存的是抓取器类型的字符串标识(比如 "bs"、"browser"),这是从配置传进来的。
         self.scraper = scraper
         if self.scraper == "tavily_extract":
             self._check_pkg(self.scraper)
@@ -70,7 +71,7 @@ class Scraper:
 
         res = [content for content in contents if content["raw_content"] is not None]
         return res
-
+    #检查有没有这个包,没有的话就自动安装
     def _check_pkg(self, scrapper_name: str) -> None:
         """
         Checks and ensures required Python packages are available for scrapers that need
@@ -111,7 +112,9 @@ class Scraper:
         """
         async with self.worker_pool.throttle():
             try:
+                #决定用哪个抓取器
                 Scraper = self.get_scraper(link)
+                #实例化
                 scraper = Scraper(link, session)
 
                 # Get scraper name

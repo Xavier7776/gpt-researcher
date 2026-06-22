@@ -63,6 +63,7 @@ class ReportGenerator:
         available_images = available_images or []
         
         # send the selected images prior to writing report
+        #如果有的话就获取
         research_images = self.researcher.get_research_images()
         if research_images:
             await stream_output(
@@ -139,7 +140,7 @@ class ReportGenerator:
                 f"✍️ Writing conclusion for '{self.researcher.query}'...",
                 self.researcher.websocket,
             )
-
+        #传入的context是整个报告,即上面写的报告
         conclusion = await write_conclusion(
             query=self.researcher.query,
             context=report_content,
@@ -201,7 +202,7 @@ class ReportGenerator:
                 f"🌳 Generating subtopics for '{self.researcher.query}'...",
                 self.researcher.websocket,
             )
-
+        #生成多个子主题
         subtopics = await construct_subtopics(
             task=self.researcher.query,
             data=self.researcher.context,
@@ -221,6 +222,7 @@ class ReportGenerator:
 
         return subtopics
 
+    #产生子主题的每个小标题
     async def get_draft_section_titles(self, current_subtopic: str):
         """Generate draft section titles for the report."""
         if self.researcher.verbose:

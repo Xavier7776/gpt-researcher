@@ -132,12 +132,25 @@ async def run_agent(task, report_type, report_source, source_urls, document_urls
 
     # Initialize researcher based on report type
     if report_type == "multi_agents":
+        # Build task config from headers (frontend can override via form)
+        task_config = {
+            "max_sections": headers.get("max_sections", 3) if headers else 3,
+            "max_plan_revisions": headers.get("max_plan_revisions", 3) if headers else 3,
+            "follow_guidelines": headers.get("follow_guidelines", True) if headers else True,
+            "guidelines": headers.get("guidelines",
+                ["The report MUST be written in Chinese"]) if headers else ["The report MUST be written in Chinese"],
+            "model": headers.get("model", task.get("model", "mimo-v2.5-pro")) if headers else "mimo-v2.5-pro",
+            "publish_formats": {"markdown": True, "pdf": False, "docx": False},
+            "include_human_feedback": headers.get("include_human_feedback", False) if headers else False,
+            "verbose": headers.get("verbose", True) if headers else True,
+        }
         report = await run_multi_agent_task(
             query=task, 
             websocket=logs_handler,  # Use logs_handler instead of raw websocket
             stream_output=stream_output, 
             tone=tone, 
-            headers=headers
+            headers=headers,
+            task_config=task_config
         )
         report = report.get("report", "")
 

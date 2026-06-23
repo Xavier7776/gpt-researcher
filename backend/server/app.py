@@ -105,6 +105,8 @@ ALLOWED_ORIGINS = (
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://app.gptr.dev",
+        "https://arc-portfolio.vercel.app",
+        "https://mindstack.vercel.app",
     ]
 )
 
@@ -158,6 +160,19 @@ async def serve_frontend():
     
     return HTMLResponse(content=content)
 
+
+
+
+@app.get("/multi-agents", response_class=HTMLResponse)
+async def serve_multi_agents():
+    """Serve the multi-agents frontend HTML page."""
+    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
+    html_path = os.path.join(frontend_dir, "multi-agents.html")
+    if not os.path.exists(html_path):
+        raise HTTPException(status_code=404, detail="Multi-agents page not found")
+    with open(html_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return HTMLResponse(content=content)
 
 @app.get("/.well-known/agent-discovery.json")
 async def agent_discovery(request: Request):

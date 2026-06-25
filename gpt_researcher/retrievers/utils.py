@@ -76,6 +76,7 @@ VALID_RETRIEVERS = [
     "mcp",
     "xquik",
     "openalex",
+    "financial_data",
     "mock"
 ]
 

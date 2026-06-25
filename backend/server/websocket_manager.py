@@ -139,10 +139,12 @@ async def run_agent(task, report_type, report_source, source_urls, document_urls
             "follow_guidelines": headers.get("follow_guidelines", True) if headers else True,
             "guidelines": headers.get("guidelines",
                 ["The report MUST be written in Chinese"]) if headers else ["The report MUST be written in Chinese"],
-            "model": headers.get("model", "mimo-v2.5-pro") if headers else "mimo-v2.5-pro",
+            "model": headers.get("model", "mimo-v2.5") if headers else "mimo-v2.5",
             "publish_formats": headers.get("publish_formats", {"markdown": True, "pdf": False, "docx": False}) if headers else {"markdown": True, "pdf": False, "docx": False},
             "include_human_feedback": headers.get("include_human_feedback", False) if headers else False,
             "verbose": headers.get("verbose", True) if headers else True,
+            # 语言设置：前端通过 headers.language 传递，默认中文
+            "language": headers.get("language", "chinese") if headers else "chinese",
         }
         report = await run_multi_agent_task(
             query=task, 

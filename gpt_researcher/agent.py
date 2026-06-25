@@ -6,6 +6,7 @@ autonomous research and report generation using LLMs and web search.
 
 import json
 import os
+import re
 from typing import Any, Optional
 
 from .actions import (
@@ -174,6 +175,23 @@ class GPTResearcher:
             self._process_mcp_configs(mcp_configs)
         
         self.retrievers = get_retrievers(self.headers, self.cfg)
+
+        # --- Phase 2: Auto-detect financial queries, add FinancialDataRetriever ---
+        #先判断query里面有没有金融的代码,如果有就导入金融数据的检索器
+        if self._has_financial_context():
+            try:
+                from gpt_researcher.retrievers.financial import FinancialDataRetriever
+                self.retrievers.append(FinancialDataRetriever)
+                import logging
+                logging.getLogger(__name__).info(
+                    f"Financial ticker detected in query — "
+                    f"FinancialDataRetriever added to retrieval pipeline"
+                )
+            except ImportError:
+                import logging
+                logging.getLogger(__name__).debug("FinancialDataRetriever not available")
+        # ---------------------------------------------------------------------
+
         self.memory = Memory(
             self.cfg.embedding_provider, self.cfg.embedding_model, **self.cfg.embedding_kwargs
         )
@@ -280,6 +298,62 @@ class GPTResearcher:
             
         # Priority 4: Default to fast
         return "fast"
+
+    def _has_financial_context(self) -> bool:
+        """Detect whether the query contains a financial stock ticker.
+
+        Uses lightweight regex matching to avoid importing yfinance at startup.
+        Checks for common ticker patterns:
+        1. Parenthesized ticker: "苹果(AAPL)"
+        2. Standalone ticker: "分析 AAPL 的"
+        3. Chinese company name: "苹果" / "特斯拉" / "微软"
+        4. English company name: "apple" / "microsoft"
+        5. A-share 6-digit: "600519" / "000001" / "300750" / "688981"
+        6. HK 5-digit: "00700" / "00939"
+
+        Returns:
+            True if a known ticker symbol is detected in the query.
+        """
+        # Known tickers mapped to their Chinese/English names
+        _KNOWN_TICKERS = [
+            "AAPL", "GOOGL", "GOOG", "MSFT", "AMZN", "META",
+            "NVDA", "TSLA", "NFLX", "AMD", "INTC",
+            "BABA", "JD", "PDD", "NIO", "BIDU",
+            "TSM", "DIS", "BA", "JPM", "GS", "V", "MA",
+            "WMT", "COST", "KO", "PEP", "JNJ", "PFE",
+        ]
+        _NAME_KEYWORDS = [
+            "apple", "苹果", "microsoft", "微软", "google", "谷歌",
+            "amazon", "亚马逊", "meta", "nvidia", "英伟达",
+            "tesla", "特斯拉", "tsmc", "台积电", "netflix", "奈飞",
+            "intel", "英特尔", "amd", "alibaba", "阿里巴巴",
+            "jd", "京东", "pdd", "拼多多", "nio", "蔚来",
+            "baidu", "百度", "disney", "迪士尼", "boeing", "波音",
+            "morgan", "摩根", "goldman", "高盛", "visa",
+            "walmart", "沃尔玛", "costco", "好市多",
+            "coca", "可口可乐", "pepsi", "百事",
+            "johnson", "强生", "pfizer", "辉瑞",
+        ]
+
+        q = self.query or ""
+
+        # Strategy 1: Parenthesized ticker (e.g., (AAPL))
+        match = re.search(r'\(([A-Z]{1,5})\)', q)
+        if match:
+            return True
+
+        # Strategy 2: Standalone known ticker
+        for t in _KNOWN_TICKERS:
+            if re.search(rf'\b{t}\b', q):
+                return True
+
+        # Strategy 3: Chinese/English company name
+        q_lower = q.lower()
+        for name in _NAME_KEYWORDS:
+            if name.lower() in q_lower:
+                return True
+
+        return False
 
     def _process_mcp_configs(self, mcp_configs: list[dict]) -> None:
         """

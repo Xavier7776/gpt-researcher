@@ -28,6 +28,7 @@ def get_retriever(retriever: str):
         - semantic_scholar: Semantic Scholar academic search
         - pubmed_central: PubMed Central medical literature
         - openalex: OpenAlex scholarly works catalog
+        - financial_data: Yahoo Finance stock data
         - custom: Custom user-defined retriever
         - mcp: Model Context Protocol retriever
         - xquik: Xquik X/Twitter search
@@ -101,6 +102,10 @@ def get_retriever(retriever: str):
             from gpt_researcher.retrievers import OpenAlexSearch
 
             return OpenAlexSearch
+        case "financial_data":
+            from gpt_researcher.retrievers import FinancialDataRetriever
+
+            return FinancialDataRetriever
 
         case _:
             return None

@@ -2,6 +2,7 @@ from .arxiv.arxiv import ArxivSearch
 from .bing.bing import BingSearch
 from .custom.custom import CustomRetriever
 from .duckduckgo.duckduckgo import Duckduckgo
+from .financial import FinancialDataRetriever
 from .google.google import GoogleSearch
 from .pubmed_central.pubmed_central import PubMedCentralSearch
 from .searx.searx import SearxSearch
@@ -32,6 +33,7 @@ __all__ = [
     "ExaSearch",
     "MCPRetriever",
     "BoChaSearch",
+    "FinancialDataRetriever",
     "XquikSearch",
     "OpenAlexSearch"
 ]

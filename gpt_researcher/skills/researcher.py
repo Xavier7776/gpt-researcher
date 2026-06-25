@@ -74,8 +74,27 @@ class ResearchConductor:
         retriever_names = [r.__name__ for r in self.researcher.retrievers]
         # Remove duplicate logging - this will be logged once in conduct_research instead
 
+        # --- Phase 2: Financial query enrichment ---
+        research_query = query
+        has_financial_retriever = any(
+            "financialdata" in r.__name__.lower() for r in self.researcher.retrievers
+        )
+        if has_financial_retriever:
+            research_query = (
+                f"{query}\n\n"
+                f"[系统指令] 该查询涉及上市公司财务分析。"
+                f"请在生成的子查询中务必包含以下维度："
+                f"1) 公司基本面与估值指标(PE/PB/ROE/市值); "
+                f"2) 近期财务表现(营收/利润/现金流趋势); "
+                f"3) 行业竞争格局与可比公司对比; "
+                f"4) 宏观经济与行业政策影响; "
+                f"5) 风险因素与投资建议。"
+            )
+            self.logger.info("Financial retriever detected — injecting financial sub-query dimensions")
+        # ---------------------------------------------
+
         outline = await plan_research_outline(
-            query=query,
+            query=research_query,
             search_results=search_results,
             agent_role_prompt=self.researcher.role,
             cfg=self.researcher.cfg,
@@ -159,6 +178,42 @@ class ResearchConductor:
         elif self.researcher.report_source == ReportSource.Local.value:
             self.logger.info("Using local search")
             document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
+
+            # --- Phase 2: Financial PDF enrichment ---
+            if self._has_financial_pdfs(self.researcher.cfg.doc_path):
+                try:
+                    import os as _os
+                    pdf_files = []
+                    if _os.path.isfile(self.researcher.cfg.doc_path):
+                        if self.researcher.cfg.doc_path.lower().endswith('.pdf'):
+                            pdf_files.append(self.researcher.cfg.doc_path)
+                    elif _os.path.isdir(self.researcher.cfg.doc_path):
+                        for root, _, files in _os.walk(self.researcher.cfg.doc_path):
+                            for f in files:
+                                if f.lower().endswith('.pdf'):
+                                    pdf_files.append(_os.path.join(root, f))
+                    # 逐文件判断是否为金融 PDF，仅对金融 PDF 富化加载
+                    for pdf_path in pdf_files:
+                        try:
+                            if not self._is_financial_pdf(pdf_path):
+                                self.logger.debug(
+                                    f"Skipping non-financial PDF: {_os.path.basename(pdf_path)}"
+                                )
+                                continue
+                            from ..document.financial_pdf import FinancialPDFLoader
+                            fin_loader = FinancialPDFLoader(pdf_path)
+                            fin_docs = await fin_loader.load()
+                            document_data.extend(fin_docs)
+                            self.logger.info(
+                                f"FinancialPDFLoader enriched {len(fin_docs)} pages from {_os.path.basename(pdf_path)}"
+                            )
+                        except Exception as e:
+                            self.logger.debug(
+                                f"FinancialPDFLoader skipped {pdf_path}: {e}"
+                            )
+                except ImportError:
+                    self.logger.debug("FinancialPDFLoader not available")
+            # -------------------------------------------------
             self.logger.info(f"Loaded {len(document_data)} documents")
             if self.researcher.vector_store:
                 self.researcher.vector_store.load(document_data)
@@ -1023,4 +1078,87 @@ class ResearchConductor:
                     "progress": progress
                 }
             )
+
+    # ------------------------------------------------------------------
+    # Phase 2: Financial PDF detection
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _has_financial_pdfs(doc_path: str) -> bool:
+        """Check if the document path contains PDF files.
+
+        Args:
+            doc_path: Path to a file or directory to scan.
+
+        Returns:
+            True if at least one PDF file is found.
+        """
+        if not doc_path:
+            return False
+        try:
+            import os as _os
+            if _os.path.isfile(doc_path):
+                return doc_path.lower().endswith('.pdf')
+            #判断是文件夹则进行递归
+            if _os.path.isdir(doc_path):
+                #目录路径,子目录列名,文件名
+                for root, _, files in _os.walk(doc_path):
+                    if any(f.lower().endswith('.pdf') for f in files):
+                        return True
+        except Exception:
+            pass
+        return False
+
+    @staticmethod
+    def _is_financial_pdf(pdf_path: str) -> bool:
+        """Quickly scan a PDF to determine if it's a financial document.
+
+        Opens the PDF with PyMuPDF, reads the first 3 pages of text,
+        and checks for financial keywords. Returns False immediately
+        for non-financial PDFs to avoid unnecessary processing.
+
+        Args:
+            pdf_path: Path to the PDF file.
+
+        Returns:
+            True if financial keywords are detected in the first 3 pages.
+        """
+        _FINANCIAL_PDF_KEYWORDS = [
+            # English keywords (any case matches via lower())
+            "income statement", "balance sheet", "cash flow",
+            "statement of operations", "statement of financial",
+            "consolidated statements", "annual report",
+            "revenue", "net income", "earnings per share",
+            "total assets", "total liabilities", "shareholders equity",
+            "operating activities", "investing activities",
+            "management discussion", "md&a",
+            # Chinese keywords
+            "利润表", "资产负债表", "现金流量表", "损益表",
+            "营业收入", "净利润", "每股收益", "财务报表",
+            "总资产", "总负债", "股东权益", "管理层讨论",
+            "董事会报告", "年度报告", "季度报告",
+            "经营活动", "投资活动", "筹资活动",
+        ]
+
+        try:
+            import fitz
+            doc = fitz.open(pdf_path)
+            # Check first 3 pages (or fewer for short documents)
+            max_pages = min(3, len(doc))
+            combined_text = ""
+            for i in range(max_pages):
+                combined_text += doc[i].get_text("text")
+            doc.close()
+
+            combined_lower = combined_text.lower()
+            for kw in _FINANCIAL_PDF_KEYWORDS:
+                if kw.lower() in combined_lower:
+                    return True
+            return False
+        except ImportError:
+            # PyMuPDF not installed — can't verify, skip to be safe
+            return False
+        except Exception:
+            # File can't be opened or read — treat as non-financial
+            return False
 

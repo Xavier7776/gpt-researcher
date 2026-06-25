@@ -1,5 +1,5 @@
 {
-  "query": "全面透彻的分析一下小米公司",
+  "query": "京东方(000725)全面分析",
   "max_sections": 3,
   "max_plan_revisions": 3,
   "publish_formats": {
@@ -9,7 +9,7 @@
   },
   "include_human_feedback": false,
   "follow_guidelines": true,
-  "model": "mimo-v2.5-pro",
+  "model": "mimo-v2.5",
   "guidelines": [
     "The report MUST be written in Chinese"
   ],

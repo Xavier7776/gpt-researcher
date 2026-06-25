@@ -13,6 +13,16 @@ class HumanAgent:
         task = research_state.get("task")
         layout = research_state.get("sections")
 
+        # --- Phase 2: Financial context in human feedback prompt ---
+        financial_data = research_state.get("financial_data") or {}
+        fin_prefix = ""
+        if financial_data:
+            ticker = financial_data.get("ticker", "")
+            overview = financial_data.get("overview", {})
+            name = overview.get("name", ticker)
+            fin_prefix = f"[金融研报 | {name} ({ticker}) | 8 段式结构] "
+        # -----------------------------------------------------------
+
         user_feedback = None
 
         if task.get("include_human_feedback"):
@@ -22,7 +32,7 @@ class HumanAgent:
                     await self.stream_output(
                         "human_feedback",
                         "request",
-                        f"Any feedback on this plan of topics to research? {layout}? If not, please reply with 'no'.",
+                        f"{fin_prefix}Any feedback on this plan of topics to research? {layout}? If not, please reply with 'no'.",
                         self.websocket,
                     )
                     # because websocket is wrapped inside a CustomLogsHandler in websocket_manager
@@ -41,7 +51,7 @@ class HumanAgent:
             # Otherwise, prompt the user for feedback in the console
             else:
                 user_feedback = input(
-                    f"Any feedback on this plan? {layout}? If not, please reply with 'no'.\n>> "
+                    f"{fin_prefix}Any feedback on this plan? {layout}? If not, please reply with 'no'.\n>> "
                 )
 
         if user_feedback and "no" in user_feedback.strip().lower():

@@ -27,17 +27,49 @@ class ReviserAgent:
         review = draft_state.get("review")
         task = draft_state.get("task")
         draft_report = draft_state.get("draft")
+
+        # --- Phase 2: Financial revision context ---
+        financial_context = draft_state.get("financial_context") or {}
+        is_financial = bool(financial_context)
+
+        system_content = (
+            "You are an expert writer. Your goal is to revise drafts based on reviewer notes. "
+            "You must keep all other aspects of the draft the same."
+        )
+        if is_financial:
+            # Build financial reference for the reviser
+            fin_ref = ""
+            if financial_context:
+                fin_ref = (
+                    "Financial Data Reference (TRUSTED NUMBERS):\n"
+                    f"- PE Ratio: {financial_context.get('pe_ratio', 'N/A')}\n"
+                    f"- PB Ratio: {financial_context.get('pb_ratio', 'N/A')}\n"
+                    f"- ROE: {financial_context.get('roe', 'N/A')}%\n"
+                    f"- Revenue Growth: {financial_context.get('revenue_growth', 'N/A')}%\n"
+                    f"- Profit Margin: {financial_context.get('profit_margin', 'N/A')}%\n"
+                    "\nIf the reviewer flagged data inaccuracies, you MUST use ONLY "
+                    "the numbers above — do NOT fabricate or guess."
+                )
+            system_content = (
+                "You are a senior financial report reviser. Your goal is to revise "
+                "financial research drafts based on reviewer notes. "
+                "If the reviewer points out data inconsistencies, you MUST use the "
+                "financial data reference provided below — never guess or fabricate numbers. "
+                "You must keep all other aspects of the draft the same. "
+                "You maintain the professional 8-section financial report format.\n" + fin_ref
+            )
+
         prompt = [
-            {
-                "role": "system",
-                "content": "You are an expert writer. Your goal is to revise drafts based on reviewer notes.",
-            },
+            {"role": "system", "content": system_content},
             {
                 "role": "user",
-                "content": f"""Draft:\n{draft_report}" + "Reviewer's notes:\n{review}\n\n
-You have been tasked by your reviewer with revising the following draft, which was written by a non-expert.
-If you decide to follow the reviewer's notes, please write a new draft and make sure to address all of the points they raised.
-Please keep all other aspects of the draft the same.
+                "content": f"""Draft:\n{draft_report}\n\nReviewer's notes:\n{review}\n\n
+You have been tasked by your reviewer with revising the following draft.
+You MUST follow the reviewer's notes and address ALL of the points they raised.
+If the reviewer flagged data inaccuracies and financial reference data is provided,
+you MUST use those exact numbers — do NOT fabricate or guess.
+Write a complete revised draft that incorporates all reviewer feedback.
+Keep all other aspects of the draft the same.
 You MUST return nothing but a JSON in the following format:
 {sample_revision_notes}
 """,

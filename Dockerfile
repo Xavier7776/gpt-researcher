@@ -38,15 +38,9 @@ RUN pip install --upgrade pip && \
 FROM gpt-researcher-install AS gpt-researcher
 
 # Basic server configuration
-ARG HOST=0.0.0.0
-ENV HOST=${HOST}
 ARG PORT=8000
 ENV PORT=${PORT}
 EXPOSE ${PORT}
-
-# Uvicorn parameters used in CMD
-ARG WORKERS=1
-ENV WORKERS=${WORKERS}
 
 # Create a non-root user for security
 # NOTE: Don't use this if you are relying on `_check_pkg` to pip install packages dynamically.
@@ -61,4 +55,5 @@ WORKDIR /usr/src/app
 
 # Copy the rest of the application files with proper ownership
 COPY --chown=gpt-researcher:gpt-researcher ./ ./
-CMD uvicorn main:app --host ${HOST} --port ${PORT} --workers ${WORKERS}
+# 单进程模式：Railway 上 WebSocket 不能用 --workers，升级请求在 proxy→master→worker 链路上会断
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}

@@ -146,6 +146,11 @@ DOC_PATH = os.getenv("DOC_PATH", "./my-docs")
 
 
 # Routes
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Railway and other deployment platforms."""
+    return {"status": "healthy", "timestamp": int(time.time())}
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     """Serve the main frontend HTML page."""

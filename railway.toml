@@ -1,0 +1,21 @@
+# Railway 部署配置
+# https://docs.railway.com
+
+[build]
+builder = "NIXPACKS"
+# Python 版本由 runtime.txt 或 .python-version 控制，Railway 会自动检测
+buildCommand = "pip install -r requirements.txt && pip install -r multi_agents/requirements.txt"
+
+[deploy]
+# 启动命令 — 必须读取 $PORT
+startCommand = "cd backend && uvicorn server.app:app --host 0.0.0.0 --port $PORT --workers 1"
+# 闲置缩容 (Railway 免费套餐建议开启)
+numReplicas = 1
+sleepApplication = true
+
+[service]
+# 健康检查
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

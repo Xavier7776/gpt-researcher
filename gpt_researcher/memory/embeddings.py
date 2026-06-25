@@ -14,6 +14,7 @@ Supported providers:
     - together: Together AI embeddings
     - mistralai: Mistral AI embeddings
     - huggingface: HuggingFace embeddings
+    - jina: Jina AI embeddings (free tier: 10k/month)
     - nomic: Nomic embeddings
     - voyageai: Voyage AI embeddings
     - dashscope: DashScope embeddings
@@ -45,6 +46,7 @@ _SUPPORTED_PROVIDERS = {
     "voyageai",
     "dashscope",
     "custom",
+    "jina",
     "bedrock",
     "aimlapi",
     "netmind",
@@ -97,6 +99,17 @@ class Memory:
                     check_embedding_ctx_length=False,
                     **embedding_kwargs,
                 )  # quick fix for lmstudio
+            case "jina":
+                from langchain_openai import OpenAIEmbeddings
+
+                # Jina API 兼容 OpenAI 格式：https://api.jina.ai/v1/embeddings
+                _embeddings = OpenAIEmbeddings(
+                    model=model,
+                    openai_api_key=os.getenv("JINA_API_KEY"),
+                    openai_api_base="https://api.jina.ai/v1",
+                    check_embedding_ctx_length=False,
+                    **embedding_kwargs,
+                )
             case "openai":
                 from langchain_openai import OpenAIEmbeddings
 

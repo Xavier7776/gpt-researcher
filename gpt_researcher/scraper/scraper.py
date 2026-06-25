@@ -7,6 +7,7 @@ using various scraping backends (BeautifulSoup, PyMuPDF, Browser, etc.).
 import asyncio
 import importlib
 import logging
+import os
 import subprocess
 import sys
 
@@ -159,6 +160,14 @@ class Scraper:
                         "image_urls": [],
                         "title": title,
                     }
+
+                # 单页截断，防超大 PDF OOM（默认 150k 字符 ≈ 30k token）
+                max_len = int(os.environ.get("MAX_SCRAPER_CONTENT_LENGTH", "150000"))
+                if len(content) > max_len:
+                    self.logger.warning(
+                        f"Content too long ({len(content)} chars), truncating to {max_len}"
+                    )
+                    content = content[:max_len]
 
                 return {
                     "url": link,

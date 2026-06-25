@@ -1,6 +1,7 @@
 from datetime import datetime
 import asyncio
 import logging
+import os
 from typing import Dict, List, Optional
 
 from langgraph.graph import StateGraph, END
@@ -104,11 +105,16 @@ class EditorAgent:
 
         self._log_parallel_research(queries)
 
-        final_drafts = [
-            chain.ainvoke(self._create_task_input(
-                research_state, query, title), config={"tags": ["gpt-researcher"]})
-            for query in queries
-        ]
+        # 并行数控制：环境变量覆盖，默认 2（保守值，防止 OOM）
+        max_parallel = int(os.environ.get("MAX_PARALLEL_RESEARCH", "2"))
+        semaphore = asyncio.Semaphore(max_parallel)
+
+        async def _limited_invoke(query):
+            async with semaphore:
+                task_input = self._create_task_input(research_state, query, title)
+                return await chain.ainvoke(task_input, config={"tags": ["gpt-researcher"]})
+
+        final_drafts = [_limited_invoke(query) for query in queries]
         research_results = [
             result["draft"] for result in await asyncio.gather(*final_drafts)
         ]

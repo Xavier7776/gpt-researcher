@@ -3,7 +3,7 @@ builder = "NIXPACKS"
 buildCommand = "pip install -r requirements.txt && pip install -r multi_agents/requirements.txt"
 
 [deploy]
-startCommand = "cd backend && uvicorn server.app:app --host 0.0.0.0 --port $PORT"
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 numReplicas = 1
 sleepApplication = true
 

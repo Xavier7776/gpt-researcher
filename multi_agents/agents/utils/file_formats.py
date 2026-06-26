@@ -15,11 +15,8 @@ async def write_to_file(filename: str, text: str) -> None:
     if not isinstance(text, str):
         text = str(text)
 
-    # Convert text to UTF-8, replacing any problematic characters
-    text_utf8 = text.encode('utf-8', errors='replace').decode('utf-8')
-
-    async with aiofiles.open(filename, "w", encoding='utf-8') as file:
-        await file.write(text_utf8)
+    async with aiofiles.open(filename, "w", encoding='utf-8', newline='') as file:
+        await file.write(text)
 
 async def write_text_to_md(text: str, path: str) -> str:
     """Writes text to a Markdown file and returns the file path.

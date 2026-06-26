@@ -105,8 +105,8 @@ class EditorAgent:
 
         self._log_parallel_research(queries)
 
-        # 并行数控制：环境变量覆盖，默认 2（保守值，防止 OOM）
-        max_parallel = int(os.environ.get("MAX_PARALLEL_RESEARCH", "2"))
+        # 并行数控制：默认 1，适配 LLM API 2 并发限制
+        max_parallel = int(os.environ.get("MAX_PARALLEL_RESEARCH", "1"))
         semaphore = asyncio.Semaphore(max_parallel)
 
         async def _limited_invoke(query):

@@ -69,11 +69,17 @@ class PublisherAgent:
             )
         # -----------------------------------
 
+        # Strip leading h1/h2 from intro/conclusion (LLM often repeats title)
+        intro = (research_state.get('introduction') or "").strip()
+        intro = re.sub(r'^#\s+.*?\n+', '', intro).strip()
+        conclusion = (research_state.get('conclusion') or "").strip()
+        conclusion = re.sub(r'^#\s+.*?\n+', '', conclusion).strip()
+
         layout = f"""# {headers.get('title')}
 #### {headers.get("date")}: {research_state.get('date')}
 
 ## {headers.get("introduction")}
-{research_state.get('introduction')}
+{intro}
 
 ## {headers.get("table_of_contents")}
 {research_state.get('table_of_contents')}
@@ -81,7 +87,7 @@ class PublisherAgent:
 {sections_text}
 
 ## {headers.get("conclusion")}
-{research_state.get('conclusion')}
+{conclusion}
 {disclaimer}
 ## {headers.get("references")}
 {references}

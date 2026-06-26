@@ -58,7 +58,9 @@ async def run_research_task(query, websocket=None, stream_output=None, tone=Tone
     research_report = await chief_editor.run_research_task()
 
     if websocket and stream_output:
-        await stream_output("logs", "research_report", research_report, websocket)
+        # 只发送 publisher 生成的格式化 Markdown，而非整个 state dict
+        report_md = research_report.get("report", "") if isinstance(research_report, dict) else ""
+        await stream_output("logs", "research_report", report_md or str(research_report), websocket)
 
     return research_report
 
